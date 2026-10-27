@@ -100,6 +100,9 @@ export default function App() {
   }
 
   const scopeLabel = state.block === "all" ? "todos los bloques" : blockTitle(state.block);
+  function cuenta(n: number, singular: string, plural: string) {
+    return `${n} ${n === 1 ? singular : plural}`;
+  }
   const progress = stats.total === 0 ? 0 : Math.round((stats.answered / stats.total) * 100);
 
   return (
@@ -148,9 +151,9 @@ export default function App() {
             </div>
             {state.graded && (
               <div className="flex flex-wrap gap-2">
-                <Badge tone="moss">{stats.correct} acertadas</Badge>
-                <Badge tone="clay">{stats.incorrect} falladas</Badge>
-                <Badge>{stats.unanswered} sin responder</Badge>
+                <Badge tone="moss">{cuenta(stats.correct, "acertada", "acertadas")}</Badge>
+                <Badge tone="clay">{cuenta(stats.incorrect, "fallada", "falladas")}</Badge>
+                <Badge>{cuenta(stats.unanswered, "sin responder", "sin responder")}</Badge>
               </div>
             )}
           </div>
@@ -161,7 +164,9 @@ export default function App() {
             <p className="mt-3 text-sm leading-relaxed text-muted">
               {stats.incorrect === 0
                 ? `No has fallado ninguna pregunta respondida en ${scopeLabel}.`
-                : `Estas son las ${stats.incorrect} que has fallado en ${scopeLabel}. En verde, la correcta; en rojo, la tuya.`}
+                : stats.incorrect === 1
+                  ? `Esta es la pregunta que has fallado en ${scopeLabel}. En verde, la correcta; en rojo, la tuya.`
+                  : `Estas son las ${stats.incorrect} que has fallado en ${scopeLabel}. En verde, la correcta; en rojo, la tuya.`}
               {stats.unanswered > 0 && ` Hay ${stats.unanswered} sin responder: no cuentan como fallo hasta que contestes.`}
             </p>
           )}
