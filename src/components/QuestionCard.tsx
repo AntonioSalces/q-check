@@ -266,7 +266,7 @@ export function QuestionCard({
         )}
       </div>
 
-      {showKey && <Key result={result} reveal={reveal} />}
+      {showKey && <Key result={result} />}
       {showNote && question.note && (
         <p className="mt-3 rounded-lg bg-brass-soft px-3 py-2 text-sm leading-relaxed text-brass">{question.note}</p>
       )}
@@ -274,7 +274,7 @@ export function QuestionCard({
   );
 }
 
-function Key({ result, reveal }: { result: GradeResult; reveal: boolean }) {
+function Key({ result }: { result: GradeResult }) {
   const missing = result.parts?.filter((part) => !part.ok) ?? [];
   return (
     <div className="mt-4 space-y-2 rounded-xl bg-paper px-3 py-3 text-sm leading-relaxed">
