@@ -26,20 +26,25 @@ const hints: Record<Question["kind"], string> = {
 export function QuestionCard({
   question,
   answer,
-  graded,
+  checked,
   reveal,
   onChange,
+  onCheck,
+  onClear,
 }: {
   question: Question;
   answer: AnswerValue | undefined;
-  graded: boolean;
+  checked: boolean;
   reveal: boolean;
   onChange: (value: AnswerValue | undefined) => void;
+  onCheck: () => void;
+  onClear: () => void;
 }) {
   const result = grade(question, answer);
-  const paint = reveal || (graded && result.status !== "unanswered");
-  const showKey = reveal || (graded && result.status === "incorrect");
-  const showNote = Boolean(question.note) && (reveal || (graded && result.status !== "unanswered"));
+  const paint = reveal || (checked && result.status !== "unanswered");
+  const showKey = reveal || (checked && result.status === "incorrect");
+  const showNote = Boolean(question.note) && (reveal || (checked && result.status !== "unanswered"));
+  const hasAnswer = Boolean(answer);
 
   const orderSeed = useMemo(() => {
     if (question.kind !== "order") return [];
@@ -270,6 +275,15 @@ export function QuestionCard({
       {showNote && question.note && (
         <p className="mt-3 rounded-lg bg-brass-soft px-3 py-2 text-sm leading-relaxed text-brass">{question.note}</p>
       )}
+
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
+        <Button size="sm" disabled={!hasAnswer || checked} onClick={onCheck}>
+          Corregir
+        </Button>
+        <Button size="sm" variant="outline" disabled={!hasAnswer && !checked} onClick={onClear}>
+          Quitar respuesta
+        </Button>
+      </div>
     </article>
   );
 }

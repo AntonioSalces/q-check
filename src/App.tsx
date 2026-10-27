@@ -1,5 +1,5 @@
 import { RotateCcw, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { QuestionCard } from "@/components/QuestionCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,10 +27,22 @@ const filtersAfter: { id: ListFilter; label: string }[] = [
 export default function App() {
   const [state, setState] = useState<Persisted>(() => loadState());
   const [query, setQuery] = useState("");
+  const migratedChecked = useRef(false);
 
   useEffect(() => {
     saveState(state);
   }, [state]);
+
+  useEffect(() => {
+    if (migratedChecked.current) return;
+    migratedChecked.current = true;
+    setState((current) => {
+      if (!current.graded || Object.keys(current.checked).length > 0) return current;
+      const checked: Record<string, boolean> = {};
+      for (const question of questions) checked[question.id] = true;
+      return { ...current, checked };
+    });
+  }, []);
 
   const scope = useMemo(() => questionsOf(state.block), [state.block]);
   const needle = norm(query);
@@ -71,15 +83,47 @@ export default function App() {
   function setAnswer(id: string, value: AnswerValue | undefined) {
     setState((current) => {
       const answers = { ...current.answers };
-      if (!value) delete answers[id];
-      else answers[id] = value;
-      return { ...current, answers };
+      const checked = { ...current.checked };
+      if (!value) {
+        delete answers[id];
+        delete checked[id];
+      } else {
+        answers[id] = value;
+        delete checked[id];
+      }
+      return { ...current, answers, checked };
+    });
+  }
+
+  function checkOne(id: string) {
+    setState((current) => ({
+      ...current,
+      checked: { ...current.checked, [id]: true },
+    }));
+  }
+
+  function clearOne(id: string) {
+    setState((current) => {
+      const answers = { ...current.answers };
+      const checked = { ...current.checked };
+      delete answers[id];
+      delete checked[id];
+      return { ...current, answers, checked };
     });
   }
 
   function corregir() {
     const wrong = scope.filter((question) => grade(question, state.answers[question.id]).status === "incorrect").length;
-    patch({ graded: true, filter: wrong > 0 ? "wrong" : "all" });
+    setState((current) => {
+      const checked = { ...current.checked };
+      for (const question of scope) checked[question.id] = true;
+      return {
+        ...current,
+        checked,
+        graded: true,
+        filter: wrong > 0 ? "wrong" : "all",
+      };
+    });
     requestAnimationFrame(() => {
       document.getElementById("resultado")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -94,8 +138,12 @@ export default function App() {
     if (!window.confirm(`Se borrarán las respuestas de ${label}. Esta acción no se puede deshacer.`)) return;
     setState((current) => {
       const answers = { ...current.answers };
-      for (const question of scope) delete answers[question.id];
-      return { ...current, answers, graded: false, revealAll: false, filter: "all" };
+      const checked = { ...current.checked };
+      for (const question of scope) {
+        delete answers[question.id];
+        delete checked[question.id];
+      }
+      return { ...current, answers, checked, graded: false, revealAll: false, filter: "all" };
     });
   }
 
@@ -230,9 +278,11 @@ export default function App() {
                 key={question.id}
                 question={question}
                 answer={state.answers[question.id]}
-                graded={state.graded}
+                checked={Boolean(state.checked[question.id])}
                 reveal={state.revealAll}
                 onChange={(value) => setAnswer(question.id, value)}
+                onCheck={() => checkOne(question.id)}
+                onClear={() => clearOne(question.id)}
               />
             ))
           )}
@@ -263,6 +313,10 @@ export default function App() {
         <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 py-3 sm:flex-row">
           <Button className="flex-1" size="lg" onClick={corregir}>
             Corregir
+          </Button>
+          <Button className="flex-1" size="lg" variant="outline" onClick={resetScope}>
+            <RotateCcw className="size-4" />
+            Quitar respuestas
           </Button>
           <Button className="flex-1" size="lg" variant={state.revealAll ? "brass" : "outline"} onClick={toggleReveal}>
             {state.revealAll ? "Ocultar respuestas" : "Mostrar todas las correctas"}

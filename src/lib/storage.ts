@@ -5,6 +5,7 @@ const KEY = "procesos-industriales-v1";
 
 export interface Persisted {
   answers: Record<string, AnswerValue>;
+  checked: Record<string, boolean>;
   revealAll: boolean;
   graded: boolean;
   block: BlockId | "all";
@@ -13,6 +14,7 @@ export interface Persisted {
 
 export const defaultState: Persisted = {
   answers: {},
+  checked: {},
   revealAll: false,
   graded: false,
   block: "b1",
@@ -30,6 +32,7 @@ export function loadState(): Persisted {
       ...defaultState,
       ...parsed,
       answers: parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {},
+      checked: parsed.checked && typeof parsed.checked === "object" ? parsed.checked : {},
     };
   } catch {
     return defaultState;
